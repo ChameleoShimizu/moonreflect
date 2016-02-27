@@ -1,0 +1,356 @@
+<html>
+<head>
+<title>gamekit</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+<!--<script type="text/javascript" src="ajax.js"></script>-->
+<script type="text/javascript">
+window.onload=function(){
+	/* system */
+	var system=[true,true,false]; //[0:canvasstop][1:menu][2:gameover]
+	var option_key=false;
+	var gameover=document.getElementById('gameover');
+	
+	/* menu */
+	var topmenu=document.getElementById('topmenu');	
+	topmenu.style.opacity=1;
+	var option=document.getElementById('option');	
+	var index=0;
+	var index_max=3;
+	var index_min=0;
+	var btn=document.getElementsByTagName('span');	
+	var timer;
+						
+	/* text */
+	var text=document.getElementById('text');	
+	function WriteText(write){
+		clearTimeout(timer);
+		text.innerHTML=write;
+		text.style.opacity=1;
+		timer=setTimeout(function(){text.style.opacity=0;},3000);
+	}
+
+	/* canvas */
+	var shadow=document.getElementById('shadow');
+	var shadowctx=shadow.getContext('2d');
+	var main=document.getElementById('main');
+	var mainctx=main.getContext('2d');
+	var ballimg=new Image();
+	ballimg.src='ball.png';
+	var moveball=[true,true]; //[0:x][1:y]
+	var start_by=110;
+	var bx=0;
+	var by=start_by;
+	var bm=5;
+	var bwh=10;
+	
+	var reflectimg=new Image();
+	reflectimg.src='reflect.png';
+	var rx=225;
+	var rm=5;
+	var rw=50;
+	
+	var object=[];		
+	function CreateObject(){
+		for(var i=0; i<10; i++){
+			object[i]=[];
+			for(var j=0; j<3; j++){
+				object[i][j]=true;
+			}
+		}
+	}
+	
+	/* KeyInput */
+	var houkou=[false,false,false,false];
+	document.onkeydown=function(e) {
+		if(!e) e=window.event;
+		/* [方向キー] */
+		if(e.keyCode==37|39){	//[←:37][→:39]
+			if(!system[0]){
+				houkou[e.keyCode%37]=true;
+			}else{
+				if(system[1]||system[2]){
+					if(e.keyCode==37){
+						btn[index].style.backgroundColor=null;
+						if(index>index_min){
+							index--;
+						}else{
+							index=index_max;
+						}
+						btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+					}
+					if(e.keyCode==39){
+						btn[index].style.backgroundColor=null;
+						if(index<index_max){
+							index++;
+						}else{
+							index=index_min;
+						}
+						btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+					}
+					switch(index){
+						case 0: WriteText("前回の続きから始めます。"); break;
+						case 1: WriteText("最初からゲームを始めます。"); break;
+						case 2: WriteText("設定を変更できます。"); break;
+						case 3:	WriteText("ゲームを終了します"); break;
+						case 4: WriteText("トップメニューに戻ります。"); break;
+						case 5:	WriteText("プレイヤー名を変更します。"); break;
+						case 6: WriteText("ボールのスピードを変更します。"); break;
+						case 7: WriteText("コンティニューします。"); break;
+						case 8:	WriteText("最初からやりなおします。"); break;
+						case 9: WriteText("トップメニューに戻ります。"); break;
+					}
+				}
+			}
+		}
+		/* [Enter] */
+		if(e.keyCode==13){
+			if(system[1]||system[2]){
+				if(index==0){WriteText("まだロード機能は実装されていません。。。");}
+				if(index==1){
+					topmenu.style.opacity=0;
+					CreateObject();
+					by=start_by;
+					system[0]=false;
+					system[1]=false;
+					WriteText("スタート！");
+				}
+				if(index==2){
+					topmenu.style.opacity=0;
+					option.style.opacity=1;
+					btn[index].style.backgroundColor=null;
+					index=4;	
+					index_min=index;
+					index_max=6;
+					btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+				}
+				if(index==3){
+					WriteText("開発者のサイトに飛びます。");
+					setTimeout(function(){window.location.href="http://eig.webcrow.jp/";},1000);
+				}
+				if(index==4){
+					if(option_key){
+						option.style.opacity=0;
+						topmenu.style	.opacity=1;
+						btn[index].style.backgroundColor=null;
+						index=0;	
+						index_min=index;
+						index_max=3;
+						btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+						option_key=false;
+					}else{
+						option_key=true;
+					} //何故か上手くいかない。
+				}
+				if(index==5){
+					WriteText("そういう機能にする予定です。");
+				}
+				if(index==6){
+					WriteText("そういう機能にする予定です。");					
+				}
+				if(index==7){
+					gameover.style.opacity=0;
+					WriteText("コンティニュー");
+					bx=490;
+					by=start_by;
+					system[0]=false;
+					system[2]=false;
+				}
+				if(index==8){
+					CreateObject();
+					gameover.style.opacity=0;
+					WriteText("リスタート");
+					bx=490;
+					by=start_by;
+					system[0]=false;
+					system[2]=false;
+				}
+				if(index==9){
+					gameover.style.opacity=0;
+					bx=490;
+					by=0;
+					topmenu.style	.opacity=1;
+					btn[index].style.backgroundColor=null;
+					index=0;	
+					index_min=index;
+					index_max=3;
+					btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+					system[0]=true;
+					system[1]=true;
+					system[2]=false;
+				}
+			}
+		}
+	}
+	document.onkeyup=function(e) {
+		if(!e) e=window.event;
+		/* [方向キー] */
+		if(e.keyCode>=37&&e.keyCode<=40){	//[←:37][↑:38][→:39][↓:40]
+			houkou[e.keyCode%37]=false;
+		}
+	}
+	
+	/*初回動作*/
+	btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+	WriteText("やあ。");
+	CreateObject();
+	
+	/* Turn */
+	setInterval(function(){
+		if(!system[0]){
+			shadowctx.fillStyle="#555";
+			shadowctx.fillRect(0,0,600,400);
+			if(bx==0){moveball[0]=true;}
+			if(bx==(500-bwh)){moveball[0]=false;}
+			if(moveball[0]){
+				bx+=bm;
+			}else{
+				bx-=bm;
+			}
+			if(by==0){moveball[1]=true;}
+			if(by==(350-bwh)&&bx>=rx&&bx<=rx+rw){
+				moveball[1]=false;
+			}
+			if(by==400){
+				system[0]=true;
+				system[2]=true;
+				WriteText("あーあ。");
+				gameover.style.opacity=1;
+				btn[index].style.backgroundColor=null;
+				index=7;
+				index_min=index;
+				index_max=9;
+				btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+			}
+			if(moveball[1]){
+				by+=bm;
+			}else{
+				by-=bm;
+			}
+			if(houkou[0]&&rx>0){rx-=rm;}
+			if(houkou[2]&&rx<500-rw){rx+=rm;}
+			shadowctx.fillStyle="rgba(0,0,0,0.5)";
+			for(var i=0; i<10; i++){
+				for(var j=0; j<3; j++){
+					if(object[i][j]==true){
+						shadowctx.fillRect(50*i+5,30*j+5,40,20);
+						if(by>(30*j+5-bwh)&&by<(30*j+5+20)){
+							if(bx==(50*i+5-bwh)||bx==(50*i+5+40)){
+								object[i][j]=false;
+								if(moveball[0]){
+									moveball[0]=false;
+								}else{
+									moveball[0]=true;
+								}
+							}
+						}else if(bx>=(50*i+5-bwh)&&bx<=(50*i+5+40)){
+							if(by==(30*j+5-bwh)||by==(30*j+5+20)){
+								object[i][j]=false;
+								if(moveball[1]){
+									moveball[1]=false;
+								}else{
+									moveball[1]=true;
+								}
+							}
+						}
+					}
+				}
+			}		
+			shadowctx.drawImage(ballimg,bx,by);
+			shadowctx.drawImage(reflectimg,rx,350);
+			mainctx.drawImage(shadow,0,0);
+		}
+	},32);
+}
+</script>
+<style type="text/css">
+@import("reset.css");
+html{
+	background-color:rgba(0,0,0,0.8);
+}
+#wrap{
+	position:absolute;
+	width:500px;
+	height:400px;
+	margin:auto;
+	top:0;
+	bottom:0;
+	left:0;
+	right:0;
+	background-color:rgba(10,10,10,0.5);
+}
+canvas{
+	position:absolute;
+	background-color:rgba(0,0,0,0.9);
+}
+.menu{
+	position:absolute;
+	background-color:rgba(100,100,100,0.7);
+	width:500px;
+	height:400px;
+	transition:1s;
+	opacity:0;
+}
+h1,h2,h3,.select{margin-left:10px;}
+span{
+	transition:0.5s;
+	padding:1px 10px;
+}
+#gameover{
+	position:absolute;
+	margin:auto;
+	width:300px;
+	height:200px;
+	top:0;
+	bottom:0;
+	right:0;
+	left:0;
+	background-color:rgba(150,150,150,0.8);
+	transition:0.5s;
+	opacity:0;
+}
+#text{
+	position:absolute;
+	bottom:5px;
+	width:100%;
+	color:rgba(255,255,255,0.9);
+	font-size:15px;
+	text-align:center;
+	transition:0.5s;
+	opacity:0;
+}
+</style>
+</head>
+<body>
+	<div id="wrap">
+		<canvas id="shadow" width="500px" height="400px"></canvas>
+		<canvas id="main" width="500px" height="400px"></canvas>
+		<div id="topmenu" class="menu">
+			<h1>Moon Reflect</h1>
+			<div class="select">
+				<span>Lord</span>
+				<span>Start</span>
+				<span>Option</span>
+				<span>End</span>
+			</div>
+		</div>
+		<div id="option" class="menu">
+			<h2>Option</h2>
+			<div class="select">
+				<span>Back</span>
+				<span>Name</span>
+				<span>Speed</span>
+			</div>
+		</div>
+		<div id="gameover">
+			<h3>Gameover</h3>
+			<div class="select">
+				<span>Continue</span>
+				<span>Restart</span>
+				<span>End</span>
+			</div>
+		</div>
+		<div id="text"></div>
+	</div>
+</body>
+</html>

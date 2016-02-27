@@ -1,0 +1,539 @@
+<html>
+<head>
+<title>MoonReflect</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+<script type="text/javascript">
+window.onload=function(){
+	/* system */
+	var develop=document.getElementById("develop");
+	var scr=document.getElementsByTagName("html");
+	var system=[true,true,false,false]; //[0:canvasstop][1:menu][2:gameover][3:start]
+	var option_key=false;
+	var gameover=document.getElementById('gameover');
+
+	/* menu */
+	var topmenu=document.getElementById('topmenu');	
+	topmenu.style.opacity=1;
+	var option=document.getElementById('option');	
+	var index=0;
+	var index_max=3;
+	var index_min=0;
+	var btn=document.getElementsByTagName('span');	
+	var timer;
+	var stage=1;
+						
+	/* text */
+	var text=document.getElementById('text');	
+	function WriteText(write){
+		clearTimeout(timer);
+		text.innerHTML=write;
+		text.style.opacity=1;
+		timer=setTimeout(function(){text.style.opacity=0;},3000);
+	}
+	var playername=document.getElementById('playername');	
+	var point=document.getElementById('point');	
+
+	/* canvas */
+	var shadow=document.getElementById('shadow');
+	var shadowctx=shadow.getContext('2d');
+	var main=document.getElementById('main');
+	var mainctx=main.getContext('2d');
+	var cw=500;
+	var ch=400;
+
+	var ballimg=new Image();
+	ballimg.src='ball.png';
+	var start_by=345;
+	var start_bx=250;
+	var bx=start_bx;
+	var by=start_by;
+	var bwh=10;
+	var bwhr=bwh/2;
+	var start_bm=5;
+	var bmx=0;
+	var bmy=start_bm;
+
+	var reflectimg=new Image();
+	reflectimg.src='reflect.png';
+	reflectimg.style.border="solid 1px #fff";
+	var start_rx=250;
+	var start_ry=350;
+	var rx=start_rx;
+	var ry=start_ry;
+	var start_rm=0;
+	var max_rm=5;
+	var rm_left=start_rm;
+	var rm_right=start_rm;
+	var rw=50;
+	var rwr=rw/2;
+	
+	var object=[];
+	function CreateObject(){
+		for(var i=1; i<20; i++){
+			object[i]=[];
+			for(var j=0; j<10; j++){
+				object[i][j]=[];
+				if(j>0){
+					switch(Math.floor(Math.random()*2)){
+						case 0:
+							object[i][j][0]=false;
+						break;
+						case 1:
+							object[i][j][0]=true;
+							object[i][j][1]="rgba(255,255,255,0.9)";
+							object[i][j][2]=new Number(1);
+						break;
+					}
+				}else{
+					object[i][j][0]=false;
+				}
+			}
+		}
+	}
+	
+	/* KeyInput */
+	var houkou=[false,false,false,false];
+	document.onkeydown=function(e) {
+		if(!e) e=window.event;
+		/* [t] */
+		if(e.keyCode==84){
+			loadXml();
+		}
+		/* [方向キー] */
+		if(e.keyCode==37|39){	//[←:37][→:39]
+			if(!system[0]){
+				houkou[e.keyCode%37]=true;
+			}else{
+				if(system[1]||system[2]){
+					if(e.keyCode==37){
+						btn[index].style.backgroundColor=null;
+						btn[index].style.color=null;
+						if(index>index_min){
+							index--;
+						}else{
+							index=index_max;
+						}
+						btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+						btn[index].style.color="rgba(0,0,0,0.9)";
+					}
+					if(e.keyCode==39){
+						btn[index].style.backgroundColor=null;
+						btn[index].style.color=null;
+						if(index<index_max){
+							index++;
+						}else{
+							index=index_min;
+						}
+						btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+						btn[index].style.color="rgba(0,0,0,0.9)";
+					}
+					switch(index){
+						case 0: WriteText("前回の続きから始めます。"); break;
+						case 1: WriteText("最初からゲームを始めます。"); break;
+						case 2: WriteText("設定を変更できます。"); break;
+						case 3:	WriteText("ゲームを終了します"); break;
+						case 4: WriteText("トップメニューに戻ります。"); break;
+						case 5:	WriteText("プレイヤー名を変更します。"); break;
+						case 6: WriteText("ボールのスピードを変更します。"); break;
+						case 7: WriteText("コンティニューします。"); break;
+						case 8:	WriteText("最初からやりなおします。"); break;
+						case 9: WriteText("トップメニューに戻ります。"); break;
+					}
+				}
+			}
+		}
+		/* [Enter] */
+		if(e.keyCode==13){
+			if(system[1]||system[2]){
+				if(index==0){WriteText("まだロード機能は実装されていません。。。");}
+				if(index==1){
+					btn[index].style.backgroundColor=null;
+					btn[index].style.color=null;
+					topmenu.style.opacity=0;
+					main.style.opacity=1;
+					CreateObject();
+					by=start_by;
+					system[0]=false;
+					system[1]=false;
+					system[3]=false;
+					WriteText("スタート！");
+				}
+				if(index==2){
+					topmenu.style.opacity=0;
+					option.style.opacity=1;
+					btn[index].style.backgroundColor=null;
+					btn[index].style.color=null;
+					index=4;	
+					index_min=index;
+					index_max=6;
+					btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+					btn[index].style.color="rgba(0,0,0,0.9)";
+				}
+				if(index==3){
+					WriteText("開発者のサイトに飛びます。");
+					setTimeout(function(){window.location.href="http://eig.webcrow.jp/";},1000);
+				}
+				if(index==4){
+					if(option_key){
+						option.style.opacity=0;
+						topmenu.style	.opacity=1;
+						btn[index].style.backgroundColor=null;
+						btn[index].style.color=null;
+						index=0;
+						index_min=index;
+						index_max=3;
+						btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+						btn[index].style.color="rgba(0,0,0,0.9)";
+						option_key=false;
+					}else{
+						option_key=true;
+					} //何故か上手くいかない。
+				}
+				if(index==5){
+					name=prompt("お名前をどうぞ。","name");
+					playername.innerHTML=name;
+					WriteText("変更しました。ようこそ"+name+"さん。");
+				}
+				if(index==6){
+					if(start_bm<10){
+						start_bm++;
+					}else{
+						start_bm=5;
+					}
+					bmy=start_bm;
+					WriteText("変更しました。現在のスピードは"+start_bm+"です。");
+				}
+				if(index==7){
+					gameover.style.opacity=0;
+					main.style.opacity=1;
+					pt=parseInt(pt/2);
+					point.innerHTML="score:"+pt;
+					WriteText("コンティニュー");
+					bx=start_bx;
+					by=start_by;
+					rx=start_rx;
+					system[0]=false;
+					system[2]=false;
+					system[3]=false;
+					btn[index].style.backgroundColor=null;
+					btn[index].style.color=null;
+				}
+				if(index==8){
+					CreateObject();
+					gameover.style.opacity=0;
+					main.style.opacity=1;
+					pt=0;
+					point.innerHTML="score:"+pt;
+					WriteText("リスタート");
+					bx=start_bx;
+					by=start_by;
+					rx=start_rx;
+					system[0]=false;
+					system[2]=false;
+					system[3]=false;
+					btn[index].style.backgroundColor=null;
+					btn[index].style.color=null;
+				}
+				if(index==9){
+					gameover.style.opacity=0;
+					bx=start_bx;
+					by=start_by;
+					rx=start_rx;
+					topmenu.style	.opacity=1;
+					btn[index].style.backgroundColor=null;
+					btn[index].style.color=null;
+					index=0;	
+					index_min=index;
+					index_max=3;
+					btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+					btn[index].style.color="rgba(0,0,0,0.9)";
+					system[0]=true;
+					system[1]=true;
+					system[2]=false;
+				}
+			}
+		}
+	}
+	document.onkeyup=function(e) {
+		if(!e) e=window.event;
+		/* [方向キー] */
+		if(e.keyCode>=37&&e.keyCode<=40){	//[←:37][↑:38][→:39][↓:40]
+			houkou[e.keyCode%37]=false;
+		}
+		/* Enter */
+		if(e.keyCode==40&&!system[3]){
+			system[3]=true;
+			WriteText("Start!");
+		}
+	}
+	
+	/*初回動作*/
+	btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+	btn[index].style.color="rgba(0,0,0,0.9)";
+	pt=0;
+	point.innerHTML="score:"+pt;
+	
+	/* Turn */
+	setInterval(function(){
+		if(!system[0]){
+			shadowctx.clearRect(0,0,cw,ch);
+			vx=bx+bmx;
+			vy=by+bmy;
+			for(var i=1; i<20; i++){
+				for(var j=1; j<10; j++){
+					if(object[i][j][0]){
+						object_x=25*i;
+						object_y=25*j;
+						object_w=20;
+						object_h=20;
+						object_r=object_w/2;
+						shadowctx.strokeStyle=object[i][j][1];
+						shadowctx.beginPath();
+						shadowctx.rect(object_x-object_r,object_y-object_r,object_w,object_h);
+						//shadowctx.arc(object_x,object_y,object_r,0,Math.PI*2,false);
+						shadowctx.stroke();
+						if((bx-object_x)*(bx-object_x)+(by-object_y)*(by-object_y)<(bwhr+object_r)*(bwhr+object_r)){
+							if(Math.atan2(by-object_y,bx-object_x)<-1){
+								bmy*=(-1);
+							}else if(Math.atan2(by-object_y,bx-object_x)<1){
+								bmx*=(-1);
+							}else if(Math.atan2(by-object_y,bx-object_x)<3){
+								bmy*=(-1);
+							}else if(Math.atan2(by-object_y,bx-object_x)<5){
+								bmx*=(-1);
+							}
+							//alert(Math.atan2(by-object_y,bx-object_x));
+							object[i][j][0]=false;
+							scr[0].style.backgroundColor="#0"+Math.floor(Math.random()*5)+Math.floor(Math.random()*5);
+						}
+					}
+				}
+			}
+			if(system[3]){
+				if(vx>cw-bwhr&&bmx>0){
+					bx+=bmx-(vx-cw);
+					bmx*=(-1);
+				}
+				if(vx<cw-cw+bwhr&&bmx<0){
+					bx+=bmx+vx;
+					bmx*=(-1);
+				}
+				if(vy<ch-ch+bwhr){
+					by+=bmy+vy;
+					bmy*=(-1);
+				}
+				if(vy>ry-bwhr&&vx>=rx-rwr&&vx<=rx+rwr){
+					by+=bmy-(vy-ry);
+					bmy*=(-1);
+					if(houkou[0]){ bmx+=rm_left; }
+					if(houkou[2]){ bmx-=rm_right; }
+					if(bmx>7){ bmx=7; }
+					if(bmx<-7){ bmx=(-7); }
+				}
+				bx+=bmx;
+				by+=bmy;
+			}else{
+				bx=rx;
+			}
+			if(by>ch){
+				WriteText("ルナ「あーあ。」");
+				system[0]=true;
+				system[2]=true;
+				system[3]=true;
+				gameover.style.opacity=1;
+				main.style.opacity=0;
+				index=7;
+				index_min=index;
+				index_max=9;
+				btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+				btn[index].style.color="rgba(0,0,0,0.9)";
+			}
+			if(houkou[0]&&!houkou[2]){
+				rm_right=0;
+				if(rx-rm_left+1<cw-cw+rwr){
+					rx-=rx-rwr;
+				}else if(rm_left<max_rm){
+					rx-=rm_left++;
+				}else{
+					rx-=rm_left;
+				}
+			}else if(rm_left>0){
+				rm_left--;
+			}
+			if(houkou[2]&&!houkou[0]){
+				rm_left=0;
+				if(rx+rm_right+1>cw-rwr){
+					rx+=cw-rx-rwr
+				}else if(rm_right<max_rm){
+					rx+=rm_right++;
+				}else{
+					rx+=rm_right;
+				}
+			}else	if(rm_right>0){
+				rm_right--;
+			}
+			shadowctx.drawImage(reflectimg,rx-rwr,350);
+			shadowctx.drawImage(ballimg,bx-bwhr,by-bwhr);
+			mainctx.clearRect(0,0,cw,ch);
+			mainctx.drawImage(shadow,0,0);
+		}
+		develop.innerHTML="rm_left:"+rm_left+"<br>"+"rm_right:"+rm_right+"<br>"+"bmx:"+bmx+"<br>"+"bx:"+bx;
+	},32);
+	
+	/* Ajax */
+	function loadXml(){
+		if(typeof(xmlHttp)=="object"){
+			if(flag){
+				xmlHttp.open("POST","data.xml",true);
+				xmlHttp.send(null);
+			}
+		}else{
+			xmlHttp=new XMLHttpRequest();
+			xmlHttp.onreadystatechange=function(){
+				if(xmlHttp.readyState==4&&xmlHttp.status==200){
+					xmlData=xmlHttp.responseXML;
+					xmltext=xmlData.getElementsByTagName("text");
+					WriteText(xmltext[Math.floor(Math.random()*5)].childNodes[0].nodeValue);
+					flag=true;
+				}
+			}
+		xmlHttp.open("POST","data.xml",true);
+		flag=false;
+		xmlHttp.send(null);
+		}
+	}
+}
+</script>
+<style type="text/css">
+@import("reset.css");
+html{
+	background-color:rgba(0,0,10,1);
+	color:rgba(255,255,255,0.9);
+	transition:1s;
+}
+#wrap{
+	position:absolute;
+	width:500px;
+	height:400px;
+	margin:auto;
+	top:0;
+	bottom:0;
+	left:0;
+	right:0;
+}
+canvas{
+	position:absolute;
+	transition:1s;
+	opacity:0;
+	border:5px solid #fff;
+}
+.menu{
+	position:absolute;
+	width:500px;
+	height:400px;
+	transition:1s;
+	opacity:0;
+}
+.menu>img{
+	position:absolute;
+	right:0;
+}
+h1,h2,h3,.select{margin-left:10px;}
+span{
+	transition:0.5s;
+	padding:1px 10px;
+}
+#gameover{
+	position:absolute;
+	margin:auto;
+	border:1px solid #555;
+	width:298px;
+	height:198px;
+	top:0;
+	bottom:0;
+	right:0;
+	left:0;
+	background-color:rgba(0,0,0,1);
+	transition:0.5s;
+	opacity:0;
+}
+#text{
+	position:absolute;
+	bottom:5px;
+	width:100%;
+	color:rgba(255,255,255,0.9);
+	font-size:15px;
+	text-align:center;
+	transition:0.5s;
+	opacity:0;
+}
+#playername{
+	position:absolute;
+	bottom:5px;
+	right:5px;
+	width:100%;
+	color:rgba(255,255,255,0.9);
+	font-size:15px;
+	text-align:right;
+	transition:0.5s;
+}
+#point{
+	position:absolute;
+	bottom:5px;
+	left:5px;
+	width:100%;
+	color:rgba(255,255,255,0.9);
+	font-size:15px;
+	text-align:left;
+	transition:0.5s;
+}
+#develop{
+	position:absolute;
+	right:5px;
+	width:200px;
+	background-color:rgba(255,255,255,0.9);
+	color:rgba(0,0,0,0.9);
+	font-size:15px;
+	transition:0.5s;
+}
+</style>
+</head>
+<body>
+	<div id="wrap">
+		<canvas id="shadow" width="500px" height="400px"></canvas>
+		<canvas id="main" width="500px" height="400px"></canvas>
+		<div id="topmenu" class="menu">
+			<img src="moonchan.png" alt="Moonちゃん">
+			<h1>Moon Reflect</h1>
+			<div class="select">
+				<span>Lord</span>
+				<span>Start</span>
+				<span>Option</span>
+				<span>End</span>
+			</div>
+		</div>
+		<div id="option" class="menu">
+			<img src="moonchan.png" alt="Moonちゃん">
+			<h1>Option</h1>
+			<div class="select">
+				<span>Back</span>
+				<span>Name</span>
+				<span>Speed</span>
+			</div>
+		</div>
+		<div id="gameover">
+			<h1>Gameover</h1>
+			<div class="select">
+				<span>Continue</span>
+				<span>Restart</span>
+				<span>End</span>
+			</div>
+		</div>
+		<div id="text"></div>
+		<div id="playername">name</div>
+		<div id="point"></div>
+	</div>
+	<div id="develop"></div>
+</body>
+</html>

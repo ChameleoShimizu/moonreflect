@@ -1,0 +1,500 @@
+<html>
+<head>
+<title>gamekit</title>
+<meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+<!--<script type="text/javascript" src="ajax.js"></script>-->
+<script type="text/javascript">
+window.onload=function(){
+	/* system */
+	var system=[true,true,false,false]; //[0:canvasstop][1:menu][2:gameover][3:start]
+	var option_key=false;
+	var gameover=document.getElementById('gameover');
+	
+	/* menu */
+	var topmenu=document.getElementById('topmenu');	
+	topmenu.style.opacity=1;
+	var option=document.getElementById('option');	
+	var index=0;
+	var index_max=3;
+	var index_min=0;
+	var btn=document.getElementsByTagName('span');	
+	var timer;
+	var stage=1;
+						
+	/* text */
+	var text=document.getElementById('text');	
+	function WriteText(write){
+		clearTimeout(timer);
+		text.innerHTML=write;
+		text.style.opacity=1;
+		timer=setTimeout(function(){text.style.opacity=0;},3000);
+	}
+	var playername=document.getElementById('playername');	
+	var point=document.getElementById('point');	
+
+	/* canvas */
+	var shadow=document.getElementById('shadow');
+	var shadowctx=shadow.getContext('2d');
+	var main=document.getElementById('main');
+	var mainctx=main.getContext('2d');
+	var ballimg=new Image();
+	ballimg.src='ball.png';
+	var moveball=[true,true,false]; //[0:x][1:y][2:接触フラグ]
+	var start_by=340;
+	var start_bx=245;
+	var bx=start_bx;
+	var by=start_by;
+	var bwh=10;
+	var start_bm=10;
+	var bm=1;
+	var bmx=0;
+		
+	var reflectimg=new Image();
+	reflectimg.src='reflect.png';
+	var start_rx=225;
+	var rx=start_rx;
+	var start_rm=0;
+	var max_rm=20;
+	var rm=start_rm;
+	var rw=50;
+	
+	var object=[];
+	function CreateObject(){
+		for(var i=0; i<10; i++){
+			object[i]=[];
+			for(var j=0; j<5; j++){
+				object[i][j]=[];
+				switch(Math.floor(Math.random()*6)){
+					case 0:
+						object[i][j][0]=false;
+					break;
+					case 1:
+						object[i][j][0]=true;
+						object[i][j][1]="rgba(0,0,0,0.5)";
+						object[i][j][2]=new Number(1);
+					break;
+					case 2:
+						object[i][j][0]=true;
+						object[i][j][1]="rgba(0,0,100,0.5)";
+						object[i][j][2]=new Number(2);
+					break;
+					case 3:
+						object[i][j][0]=true;
+						object[i][j][1]="rgba(0,100,100,0.5)";
+						object[i][j][2]=new Number(5);
+					break;
+					case 4:
+						object[i][j][0]=true;
+						object[i][j][1]="rgba(100,0,100,0.5)";
+						object[i][j][2]=new Number(10);
+					break;
+					case 5:
+						object[i][j][0]=true;
+						object[i][j][1]="rgba(200,200,200,1)";
+						object[i][j][2]=new Number(50);
+					break;
+				}
+			}
+		}
+	}
+	
+	/* KeyInput */
+	var houkou=[false,false,false,false];
+	document.onkeydown=function(e) {
+		if(!e) e=window.event;
+		/* [方向キー] */
+		if(e.keyCode==37|39){	//[←:37][→:39]
+			if(!system[0]){
+				houkou[e.keyCode%37]=true;
+			}else{
+				if(system[1]||system[2]){
+					if(e.keyCode==37){
+						btn[index].style.backgroundColor=null;
+						if(index>index_min){
+							index--;
+						}else{
+							index=index_max;
+						}
+						btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+					}
+					if(e.keyCode==39){
+						btn[index].style.backgroundColor=null;
+						if(index<index_max){
+							index++;
+						}else{
+							index=index_min;
+						}
+						btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+					}
+					switch(index){
+						case 0: WriteText("前回の続きから始めます。"); break;
+						case 1: WriteText("最初からゲームを始めます。"); break;
+						case 2: WriteText("設定を変更できます。"); break;
+						case 3:	WriteText("ゲームを終了します"); break;
+						case 4: WriteText("トップメニューに戻ります。"); break;
+						case 5:	WriteText("プレイヤー名を変更します。"); break;
+						case 6: WriteText("ボールのスピードを変更します。"); break;
+						case 7: WriteText("コンティニューします。"); break;
+						case 8:	WriteText("最初からやりなおします。"); break;
+						case 9: WriteText("トップメニューに戻ります。"); break;
+					}
+				}
+			}
+		}
+		/* [Enter] */
+		if(e.keyCode==13){
+			if(system[1]||system[2]){
+				if(index==0){WriteText("まだロード機能は実装されていません。。。");}
+				if(index==1){
+					topmenu.style.opacity=0;
+					CreateObject();
+					by=start_by;
+					system[0]=false;
+					system[1]=false;
+					system[3]=false;
+					WriteText("スタート！");
+				}
+				if(index==2){
+					topmenu.style.opacity=0;
+					option.style.opacity=1;
+					btn[index].style.backgroundColor=null;
+					index=4;	
+					index_min=index;
+					index_max=6;
+					btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+				}
+				if(index==3){
+					WriteText("開発者のサイトに飛びます。");
+					setTimeout(function(){window.location.href="http://eig.webcrow.jp/";},1000);
+				}
+				if(index==4){
+					if(option_key){
+						option.style.opacity=0;
+						topmenu.style	.opacity=1;
+						btn[index].style.backgroundColor=null;
+						index=0;
+						index_min=index;
+						index_max=3;
+						btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+						option_key=false;
+					}else{
+						option_key=true;
+					} //何故か上手くいかない。
+				}
+				if(index==5){
+					name=prompt("お名前をどうぞ。","name");
+					playername.innerHTML=name;
+					WriteText("変更しました。ようこそ"+name+"さん。");
+				}
+				if(index==6){
+					if(start_bm<20){
+						start_bm++;
+					}else{
+						start_bm=10;
+					}
+					WriteText("変更しました。現在のスピードは"+start_bm+"です。");
+				}
+				if(index==7){
+					gameover.style.opacity=0;
+					pt=parseInt(pt/2);
+					point.innerHTML="score:"+pt;
+					WriteText("コンティニュー");
+					bx=start_bx;
+					by=start_by;
+					rx=start_rx;
+					system[0]=false;
+					system[2]=false;
+					system[3]=false;
+				}
+				if(index==8){
+					CreateObject();
+					gameover.style.opacity=0;
+					pt=0;
+					point.innerHTML="score:"+pt;
+					WriteText("リスタート");
+					bx=start_bx;
+					by=start_by;
+					rx=start_rx;
+					system[0]=false;
+					system[2]=false;
+					system[3]=false;
+				}
+				if(index==9){
+					gameover.style.opacity=0;
+					bx=start_bx;
+					by=start_by;
+					rx=start_rx;
+					topmenu.style	.opacity=1;
+					btn[index].style.backgroundColor=null;
+					index=0;	
+					index_min=index;
+					index_max=3;
+					btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+					system[0]=true;
+					system[1]=true;
+					system[2]=false;
+				}
+			}
+		}
+	}
+	document.onkeyup=function(e) {
+		if(!e) e=window.event;
+		/* [方向キー] */
+		if(e.keyCode>=37&&e.keyCode<=40){	//[←:37][↑:38][→:39][↓:40]
+			houkou[e.keyCode%37]=false;
+		}
+		/* Enter */
+		if(e.keyCode==40&&!system[3]){
+			system[3]=true;
+			WriteText("Start!");
+		}
+	}
+	
+	/*初回動作*/
+	btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+	WriteText("やあ。");
+	pt=0;
+	point.innerHTML="score:"+pt;
+	
+	/* Turn */
+	setInterval(function(){
+		if(!system[0]){
+			shadowctx.fillStyle="#555";
+			shadowctx.fillRect(0,0,600,400);
+			if(houkou[0]&&rx>0){
+				if(rm<max_rm){
+					rm++;
+				}
+				rx-=rm;
+				if(!system[3]){
+					bx-=rm;
+				}
+			}else if(!houkou[2]&&rm>start_rm&&rx>0){
+				rx-=rm;
+				rm--;
+				if(!system[3]){
+					bx-=rm;
+				}
+			}
+			if(houkou[2]&&rx<500-rw){
+				if(rm<max_rm){
+					rm++;
+				}
+				rx+=rm;
+				if(!system[3]){
+					bx+=rm;
+				}
+			}else if(!houkou[0]&&rm>start_rm&&rx<500-rw){				
+				rx+=rm;
+				rm--;
+				if(!system[3]){
+					bx+=rm;
+				}
+			}
+			shadowctx.drawImage(reflectimg,rx,350);
+			for(var l=1; l<=start_bm; l++){
+				if(bx==0){moveball[0]=true;}
+				if(bx==(500-bwh)){moveball[0]=false;}
+				if(system[3]){
+					if(bmx%l==0){
+						if(moveball[0]){
+							bx+=bm;
+						}else{
+							bx-=bm;
+						}
+					}
+					if(moveball[1]){
+							by+=bm;
+						}else{
+							by-=bm;
+					}
+				}else{
+					WriteText("Please CursorKey↓ on key up!");
+				}
+				if(by==0){
+					moveball[1]=true;
+				}
+				if(by==(350-bwh)&&bx>=rx&&bx<=rx+rw){
+					moveball[1]=false;
+					if(houkou[0]&&moveball[0]){
+						bmx-=rm;
+					}
+					if(houkou[0]&&!moveball[0]){
+						bmx+=rm;
+					}
+					if(!houkou[0]&&!moveball[0]){
+						bmx+=rm;
+					}
+					if(!houkou[0]&&moveball[0]){
+						bmx-=rm;
+					}
+				}
+				if(by>=400+start_bm){
+					system[0]=true;
+					system[2]=true;
+					WriteText("あーあ。");
+					gameover.style.opacity=1;
+					btn[index].style.backgroundColor=null;
+					index=7;
+					index_min=index;
+					index_max=9;
+					btn[index].style.backgroundColor="rgba(200,200,200,0.9)";
+				}
+				for(var i=0; i<10; i++){
+					for(var j=0; j<5; j++){
+						if(object[i][j][0]==true){
+							object_w=50;
+							object_h=20;
+							object_x=50*i;
+							object_y=20*j;
+							shadowctx.fillStyle=object[i][j][1];
+							plus=object[i][j][2];
+							shadowctx.fillRect(object_x,object_y,object_w,object_h);
+							if(by>object_y-bwh&&by<object_y+object_h){
+								if(bx==object_x-bwh||bx==object_x+object_w){
+									object[i][j]=false;
+									if(moveball[0]){
+										moveball[0]=false;
+									}else{
+										moveball[0]=true;
+									}
+									pt+=plus;
+									point.innerHTML="score:"+pt;
+								}
+							}else if(bx>=object_x-bwh&&bx<=object_x+object_w){
+								if(by==object_y-bwh||by==object_y+object_h){
+									object[i][j]=false;
+									if(moveball[1]){
+										moveball[1]=false;
+									}else{
+										moveball[1]=true;
+									}
+									pt+=plus;
+									point.innerHTML="score:"+pt;
+								}
+							}
+						}
+					}
+				}
+				shadowctx.globalAlpha=l/start_bm;
+				shadowctx.drawImage(ballimg,bx,by);
+			}
+			mainctx.drawImage(shadow,0,0);
+		}
+	},32);
+}
+</script>
+<style type="text/css">
+@import("reset.css");
+html{
+	background-color:rgba(0,0,0,0.8);
+}
+#wrap{
+	position:absolute;
+	width:500px;
+	height:400px;
+	margin:auto;
+	top:0;
+	bottom:0;
+	left:0;
+	right:0;
+	background-color:rgba(10,10,10,0.5);
+}
+canvas{
+	position:absolute;
+	background-color:rgba(0,0,0,0.9);
+}
+.menu{
+	position:absolute;
+	background-color:rgba(100,100,100,0.7);
+	width:500px;
+	height:400px;
+	transition:1s;
+	opacity:0;
+}
+h1,h2,h3,.select{margin-left:10px;}
+span{
+	transition:0.5s;
+	padding:1px 10px;
+}
+#gameover{
+	position:absolute;
+	margin:auto;
+	width:300px;
+	height:200px;
+	top:0;
+	bottom:0;
+	right:0;
+	left:0;
+	background-color:rgba(150,150,150,0.8);
+	transition:0.5s;
+	opacity:0;
+}
+#text{
+	position:absolute;
+	bottom:5px;
+	width:100%;
+	color:rgba(255,255,255,0.9);
+	font-size:15px;
+	text-align:center;
+	transition:0.5s;
+	opacity:0;
+}
+#playername{
+	position:absolute;
+	bottom:5px;
+	right:5px;
+	width:100%;
+	color:rgba(255,255,255,0.9);
+	font-size:15px;
+	text-align:right;
+	transition:0.5s;
+}
+#point{
+	position:absolute;
+	bottom:5px;
+	left:5px;
+	width:100%;
+	color:rgba(255,255,255,0.9);
+	font-size:15px;
+	text-align:left;
+	transition:0.5s;
+}
+</style>
+</head>
+<body>
+	<div id="wrap">
+		<canvas id="shadow" width="500px" height="400px"></canvas>
+		<canvas id="main" width="500px" height="400px"></canvas>
+		<div id="topmenu" class="menu">
+			<h1>Moon Reflect</h1>
+			<div class="select">
+				<span>Lord</span>
+				<span>Start</span>
+				<span>Option</span>
+				<span>End</span>
+			</div>
+		</div>
+		<div id="option" class="menu">
+			<h1>Option</h1>
+			<div class="select">
+				<span>Back</span>
+				<span>Name</span>
+				<span>Speed</span>
+			</div>
+		</div>
+		<div id="gameover">
+			<h1>Gameover</h1>
+			<div class="select">
+				<span>Continue</span>
+				<span>Restart</span>
+				<span>End</span>
+			</div>
+		</div>
+		<div id="text"></div>
+		<div id="playername">name</div>
+		<div id="point"></div>
+	</div>
+</body>
+</html>
